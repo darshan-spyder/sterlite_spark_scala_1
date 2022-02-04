@@ -1,0 +1,161 @@
+							SPARK ASSIGNMENTS
+
+
+Day1 Spark Assignments
+=========================================================================================================================
+
+
+Problem 1.
+===============
+1. Put three files which are in our intern's google drive folder on hadoop.
+2. use intellij idea
+	a. create a project with maven
+	b. add shared dependencies in pom.xml
+	c. add scala framework to maven project
+	d. refresh your maven project
+	e. in main folder create one folder named scala and marked it as source directory 
+	f. after that create module inside scala folder named day1assignments
+	g. create scala object inside it 
+
+
+3. configuration part
+	a. create a spark session inside scala object and define all configuration inside it like appname, master, config etc.
+
+object day_1_problem_1{
+	def main(args: Array[String]):Unit={
+		val sparkSession = SparkSession.builder()
+		.appName(name="Day 1 Problem 1")
+		.master(master="local")
+		.config("")
+		.getOrCreate()
+
+4. read employee_address_details.csv from hdfs and display records from that csv file.
+
+val rd = sparkSession.read.format("csv").option("header","true").load("employee_address_details.csv")
+
+
+5. display all records from employee_address_details.csv in proper format.
+
+rd.show()
+
+
+	
+Problem 2.
+===============
+
+continuing the above assignment.............
+
+6. store all displayed records in hdfs.
+
+rd.write.csv("folder_name")
+	
+
+7. filter the records based on column named "Region"
+	filter conditions ==>  	"Region" = Northeast
+				"Region" = South
+				“Region" = Midwest
+				"Region" = West
+				"Region" = East
+
+rd.filter(rd("Region")==="Northeast").show()
+rd.filter(rd("Region")==="South").show()
+rd.filter(rd("Region")==="Midwest").show()
+rd.filter(rd("Region")==="West").show()
+rd.filter(rd("Region")==="East").show()
+
+8. for all the above filter conditions show the filtered records and store it individual.
+	(you should use different dataframes for different filter conditions)
+	for example: path should be like below:
+					empdata/Region=Northeast/<filtered-files>
+					empdata/Region=South/<filtered-files> etc.
+
+val n = rd.filter(rd("Region")==="Northeast")
+n.write.csv("empdata/Region=Northeast")
+val n = rd.filter(rd("Region")==="South")
+n.write.csv("empdata/Region=South")
+val n = rd.filter(rd("Region")==="Midwest")
+n.write.csv("empdata/Region=Midwest")
+val n = rd.filter(rd("Region")==="West")
+n.write.csv("empdata/Region=West")
+val n = rd.filter(rd("Region")==="East")
+n.write.csv("empdata/Region=East")
+
+9. What can I do for storing data region wise instead of creating diff-diff dataframes for diff-diff filter conditions?
+	(implement your findings in your codes)
+	(the results of problem 8 and 9 should be same)
+
+rd.write.partitionBy("Region").option("header",true).csv("path")
+
+
+
+
+
+
+
+Day2 Spark Assignments
+=========================================================================================================================
+
+Problem 3
+===============
+10. load both csv files using sparksession (emppersonaldata, empbusinessdata)
+val rd1 = sparkSession.read.format("csv").option("header","true").load("employee_business_details.csv")
+val rd2 = sparkSession.read.format("csv").option("header","true").load("employee_personal_details.csv")
+	
+11. save individual dataframes as temp views in spark and use spark SQL for below problems. 
+rd.createOrReplaceTempView("EAD")
+rd1.createOrReplaceTempView("EBD")
+rd2.createOrReplaceTempView("EPD")
+
+
+a. Employees having AgeinYrs between 30.00 and 40.00, Find average salary, minimum salary and maximum salary.
+
+	val a_salary = sparkSession.sql("select AVG(CAST(salary as float)) from EBD b JOIN EPD p ON b.Emp_ID == p.Emp_ID where AgeinYrs BETWEEN 30.00 AND 40.00")
+	a_salary.show()
+	val min_salary = sparkSession.sql("select MIN(CAST(salary as float)) from EBD b JOIN EPD p ON b.Emp_ID == p.Emp_ID where AgeinYrs BETWEEN 30.00 AND 40.00")
+	min_salary.show()
+	val max_salary = sparkSession.sql("select MAX(CAST(salary as float)) from EBD b JOIN EPD p ON b.Emp_ID == p.Emp_ID where AgeinYrs BETWEEN 30.00 AND 40.00")
+	max_salary.show()
+
+b. Count No. of Employees joined for a particular year individually.
+		for example:
+			cols name => No of Employees, Year_of_Joining
+						10,		2019	
+						23,		2012 etc.....	
+
+	val c_salary = sparkSession.sql("select COUNT(Emp_ID) AS No_of_Employees,Year_of_Joining from EBD where group by Year_of_Joining")
+	c_salary.show()
+
+c. Order above data by Year_of_Joining 
+	ie. if 2011 is minimum Year_of_Joining then it will be the first record of the result and subsequently follows.
+
+	val c1_salary = sparkSession.sql("select COUNT(Emp_ID),Year_of_Joining from EBD where group by Year_of_Joining order by No_of_Employees")
+	c1_salary.show()
+
+d. show the employee id, current salary, last hike, salary before last hike and store it into hdfs. 
+(you need to calculate salary before last hike)
+
+	val h_salary = sparkSession.sql("SELECT Emp_ID,CAST(salary as float) AS current_salary,LastHike,CAST((salary-((salary*REPLACE(LastHike,'%',''))/100)) AS float) as Before_salary FROM EBD")
+	h_salary.show() 
+	h_salary.write.csv("empdata/lastHikeSalary")
+
+e. show average weight in kgs for the employees who have joined on Monday, wednesday or friday and store it into hdfs. 
+
+	val a_weight = sparkSession.sql("select AVG(CAST(WeightinKgs as float)) from EBD b JOIN EPD p ON b.Emp_ID == p.Emp_ID where b.DOW_of_Joining='Monday' OR b.DOW_of_Joining='wednesday' OR b.DOW_of_Joining='friday' ")
+	a_weight.show()
+	a_weight.write.csv("empdata/averageWeight")
+
+f. print employee id, first name, last name, state, Date of Birth of employees who have been born in state "AK" and after 01-01-1980 and store it into hdfs.
+	 
+	val date_state = spark.Session.sql(" ")
+	date_state.show()
+	date_state.write.csv("empdata/dataState")
+
+g. find the maximum weight of the employees who belongs to the highest employee populous state.
+ 		(for example 
+ 				if the state "AK" has the highest number of employees then find the maximum weight of the employees from "AK".
+ 		)
+
+	val w_emp = spark.Session.sql("select MAX(ep.WeightinKgs) from EAD a JOIN EPD p ON a.Emp_ID == p.Emp_ID where a.state=(select state from (select count(Emp_ID) as a, state from EAD GROUP BY state ORDER BY a DESC limit 1))")
+	w_emp.show()
+
+
